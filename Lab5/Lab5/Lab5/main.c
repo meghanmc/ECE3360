@@ -11,19 +11,12 @@
 
 // define baud rate as 9600
 #define BAUD 9600
-#define MYUBRR F_CPU/16/BAUD-1
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <string.h>
 #include <avr/pgmspace.h>
-
-// rx_buffer setup
-#define RX_BUFFTER_SIZE 32 // TODO - does this number matter?
-unsigned char rx_buffer[RX_BUFFTER_SIZE];
-unsigned char rx_buffer_head;
-unsigned char rx_buffer_tail;
 
 // store strings in SRAM and FLASH
 const char sdata[] = "This string is in SRAM";
@@ -50,25 +43,28 @@ int main(void){
 // initialize the USART
 void usart_init(void){
 	// set baud rate
-	UBRR0H = (unsigned char) (MYUBRR>>8);
-	UBRR0L = (unsigned char) MYUBRR;
+	unsigned short ubrr;
+	ubrr = (double)F_CPU / (BAUD*16.0) - 1.0;
+	UBRR0H = (unsigned char) (ubrr & 0xFF00);
+	UBRR0L = (unsigned char) (ubrr & 0x00FF);
 	
 	// enable Rx and Tx
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
 	
 	// 8 data bits, odd parity, 2 stop bits 
 	UCSR0C = (1<<UCSZ01) | (1<<UCSZ00) | (1<<UPM01) | (1<<UPM00) | (1<<USBS0);
-	
-	
+
+	// Shouldn't need to set up DDRD because they are set by default when USART mode is enabled
 }
 
 // print a string from SRAM
 void usart_prints(const char *ptr){
-	while (ptr) {
+	while (*ptr) {
 		while(!(UCSR0A & (1<<UDRE0)))
 			; //wait for data register to be ready
+		cli();
 		UDR0 = *(ptr++);
-
+		sei();
 	}
 }
 
