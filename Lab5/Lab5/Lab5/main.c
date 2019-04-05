@@ -20,24 +20,25 @@
 #include <avr/pgmspace.h>
 
 // rx_buffer setup
-#define RX_BUFFTER_SIZE 32
+#define RX_BUFFTER_SIZE 32 // TODO - does this number matter?
 unsigned char rx_buffer[RX_BUFFTER_SIZE];
 unsigned char rx_buffer_head;
 unsigned char rx_buffer_tail;
 
 // store strings in SRAM and FLASH
-const char sdata[] = "This string is stored in SRAM";
-const char fdata[] PROGMEM = "This string is stored in FLASH";
+const char sdata[] = "This string is in SRAM";
+const char fdata[] PROGMEM = "This string is in FLASH";
 
 // function prototypes
 void usart_init(void);
-void usart_prints(char *ptr);
-void usart_printf(char *ptr);
+void usart_prints(const char *ptr);
+void usart_printf(const char *ptr);
 void usart_putchar(char c);
 int readADC(void);
 
 
 int main(void){
+	
 	// enable global interrupts
 	sei();
 	
@@ -62,14 +63,17 @@ void usart_init(void){
 }
 
 // print a string from SRAM
-void usart_prints(char *ptr){
+void usart_prints(const char *ptr){
 	while (ptr) {
+		while(!(UCSR0A & (1<<UDRE0)))
+			; //wait for data register to be ready
+		UDR0 = *(ptr++);
 
 	}
 }
 
 // print a string from FLASH
-void usart_printf(char *ptr){
+void usart_printf(const char *ptr){
 	char c;
 	//
 	while(pgm_read_byte_near(ptr)) {
@@ -81,19 +85,17 @@ void usart_printf(char *ptr){
 
 // writes a single character of a string
 void usart_putchar(char c){
-	// UDRE0 - USART Data Register 0 empty flag
+	// UDRE0 = USART Data Register 0 empty flag
 	// Wait until the data register is ready for data
 	while(!(UCSR0A & (1<<UDRE0)))
-		;
+		; //wait for data register to be ready
 	UDR0 = c;
 }
 
-void usart_putchar(char c){
-}
 
 // read ADC voltage level
 int readADC(){
-	
+	return 0;
 }
 
 
