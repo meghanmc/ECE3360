@@ -11,6 +11,12 @@
 // define baud rate as 9600
 #define BAUD 9600
 
+// set up receive buffer
+#define RX_BUFFER_SIZE 64 // TODO does this size matter?
+unsigned char rx_buffer[RX_BUFFER_SIZE];
+volatile unsigned char rx_buffer_head;
+volatile unsigned char rx_buffer_tail; // TODO does this need volatile keyword??
+
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <util/delay.h>
@@ -27,22 +33,47 @@ void usart_init(void);
 void usart_prints(const char *ptr);
 void usart_printf(const char *ptr);
 void usart_putchar(const char c);
+unsigned char usart_getchar(void);
+void echo4(void);
 int readADC(void);
 
 
-int main(void){
-	
+int main(void){	
 	// enable global interrupts
 	sei();
-	
+	adc_init();
 	usart_init();
 	usart_prints(sdata);
 	usart_printf(fdata);
-	usart_prints("This string is defined in main()\n");
+		while (1){
+			usart_prints("\n SELECT A MODE: M, S, R, E\n");
 
-	while(1)
-		;
+			unsigned char user_sel = usart_getchar();
+			if (user_sel == 'M'){
+				usart_prints("User selected MEASURE\n");
+				} else if (user_sel == 'S') {
+				usart_prints("User selected STORE\n");
+				} else if (user_sel == 'R') {
+				usart_prints("User selected RETRIEVE\n");
+				} else if (user_sel == 'E') {
+				usart_prints("User selected E\n");
+				} else {
+				usart_prints("Unrecognized Input\n");
+			}
+	}
+
 	return(1);
+}
+
+// setup ADC
+void adc_init(void){
+	ADMUX = (0<<REFS1) | (1<<REFS0) ;
+
+	// ADEN = ADC Enable
+	// ADSC = ADC Start Conversion
+	// ADATE = ADATE ADC Auto Trigger Enable
+
+	ADCSRA = (1<<ADEN) | (1<<ADATE)
 }
 
 // initialize the USART
@@ -57,6 +88,7 @@ void usart_init(void){
 	UCSR0B = (1<<RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 
 	//Asynchronous USART, 8 data bits, NO parity, 1 stop bits
+	// TODO - per lab specifications, should be 8 bit, even, 2 stop bits
 	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
 }
 
@@ -92,31 +124,42 @@ void usart_putchar(const char c){
 	sei();
 }
 
+unsigned char usart_getchar(void){
+	unsigned char ch;
+
+	while (rx_buffer_tail == rx_buffer_head){
+		; //while the buffer is empty, wait
+	}
+	ch = rx_buffer[rx_buffer_tail];
+	if (rx_buffer_tail == RX_BUFFER_SIZE-1){
+		rx_buffer_tail = 0;
+	} else {
+		rx_buffer_tail++;
+	}
+	return ch;
+
+}
+
 ISR(USART_RX_vect)
 {
 	// UART receive interrupt handler.
-	// To do: check and warn if buffer overflows.
-	/*
 	char c = UDR0;
 	rx_buffer[rx_buffer_head] = c;
 	if (rx_buffer_head == RX_BUFFER_SIZE - 1)
 	rx_buffer_head = 0;
 	else
 	rx_buffer_head++;
-	*/
+}
+
+void echo4(void) {
+   for (int i=0;i<=4-1;i++){
+	   unsigned char c = usart_getchar();    // Get character
+	   usart_putchar(c);					// Echo it back
+   }
 }
 
 // read ADC voltage level
 int readADC(){
 	return 0;
+	int adc = 
 }
-
-
-// TODO - make some interrupt that acknowledges when there is a value in the URDn (receiving) register
-// when sending data, place data in the UDR (output register). When all of the bits have been shifted, the UDRE (USART Data Register Empty) flag will be set - can use an interrupt for that!!
-// URD0 is the USART receive register
-// UDRE in UCSR0A - USART Data Register empty flag
-// 
-
-
- 
