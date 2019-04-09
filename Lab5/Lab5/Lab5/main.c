@@ -27,8 +27,8 @@ volatile unsigned char rx_buffer_tail; // TODO does this need volatile keyword??
 #include <stdio.h>
 
 // store strings in SRAM and FLASH
-const char sdata[] = "This string is in SRAM\n";
-const char fdata[] PROGMEM = "This string is in FLASH\n";
+const char sdata[] = "This string is in SRAM\n\r";
+const char fdata[] PROGMEM = "This string is in FLASH\n\r";
 
 // function prototypes
 void usart_init(void);
@@ -49,28 +49,27 @@ int main(void){
 	// enable global interrupts
 	sei();
 	usart_init();
-	usart_prints(sdata);
-	usart_printf(fdata);
-		while (0){
-			usart_prints("\n SELECT A MODE: M, S, R, E\n");
-
-			unsigned char user_sel = usart_getchar();
-			if (user_sel == 'M'){
-				usart_prints("User selected MEASURE\n");
-				} else if (user_sel == 'S') {
-				usart_prints("User selected STORE\n");
-				} else if (user_sel == 'R') {
-				usart_prints("User selected RETRIEVE\n");
-				} else if (user_sel == 'E') {
-				usart_prints("User selected E\n");
-				} else {
-				usart_prints("Unrecognized Input\n");
-			}
-	}
 	adc_init();
-	for (int x = 0; x<5; x++){
-		v = readADC();
-		_delay_ms(100);
+	// TODO - remove these later
+	//usart_prints(sdata);
+	//usart_printf(fdata);
+	while (1){
+		usart_prints("\nSELECT A MODE: M, S, R, E\n\r");
+
+		unsigned char user_sel = usart_getchar();
+		if (user_sel == 'M' || user_sel == 'm' ){
+			v = readADC();
+			sprintf(str, "v = %.3f V\n\r", v);
+			usart_prints(str);
+		} else if (user_sel == 'S' || user_sel == 's') {
+			usart_prints("User selected STORE\n\r");
+		} else if (user_sel == 'R') {
+			usart_prints("User selected RETRIEVE\n\r");
+		} else if (user_sel == 'E') {
+			usart_prints("User selected E\n\r");
+		} else {
+			usart_prints("Unrecognized Input\n\r");
+		}
 	}
 
 	return(1);
@@ -78,13 +77,13 @@ int main(void){
 
 // setup ADC
 void adc_init(void){
-	ADMUX = (0<<REFS1) | (1<<REFS0) | (1<<MUX0); // set ADMUX0 as ADC input, set mode as AVcc with ext. capacitor at AREF pin
+	// set ADMUX0 as ADC input, set mode as AVcc with ext. capacitor at AREF pin
+	ADMUX = (0<<REFS1) | (1<<REFS0);
 
 	// ADEN = ADC Enable
 	// ADSC = ADC Start Conversion
-	// ADATE = ADATE ADC Auto Trigger Enable
-	// ADPS[2:0] = Prescalar Select - 32
-	ADCSRA = (1<<ADEN) | (1<<ADATE) | (1<<ADPS2) | (1<<ADPS1) ;
+	// ADPS[2:0] = Prescalar Select - 64
+	ADCSRA = (1<<ADEN)| (1<<ADPS2) | (1<<ADPS1);
 }
 
 // initialize the USART
@@ -172,21 +171,12 @@ void echo4(void) {
 // read ADC voltage level
 float readADC(){
 	ADCSRA |= (1<< ADSC); // start conversion
-	//while (!(ADCSRA) | (0b10111111)) { //loop until bit is cleared 
-	while (ADCSRA & (1<<ADSC)){
-		; // wait for conversion to finish
+	while (ADCSRA & (1<<ADSC)){ // wait for conversion to finish
 	}
 	uint8_t adc_low = ADCL;
 	uint16_t adc_val = ADCH<<8 | adc_low;
-	unsigned int adc_int = (unsigned int) adc_val;
-	double adc_float = (double) adc_int;
-	//int v_val = (adc_int * V_REF) / 1024;
-	//double v_val = 100.000;
+	double adc_float = (double) adc_val;
 	double v_val = (adc_float * 5.0) / 1024.0;
 	char str[25];
-	sprintf(str, "ADC Reg. Value = %d \n", adc_int);
-	usart_prints(str);
-	sprintf(str, "v = %.3f V\n", v_val); // uses a double
-	usart_prints(str);
-	return (1) ;
+	return v_val ;
 }
