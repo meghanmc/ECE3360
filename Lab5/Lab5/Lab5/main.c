@@ -38,12 +38,14 @@ void usart_putchar(const char c);
 unsigned char usart_getchar(void);
 void adc_init();
 char echo(void);
-float readADC();
+uint16_t readADC();
 void modeS();
 void modeR();
 float ADC_to_V(uint16_t adc_val);
 unsigned char EEPROM_read(unsigned int uiAddress);
 void EEPROM_write(unsigned int uiAddress, unsigned char ucData);
+uint8_t getLow(uint16_t adc_val);
+uint8_t getHigh(uint16_t adc_val);
 
 
 int main(void){	
@@ -63,7 +65,7 @@ int main(void){
 
 		unsigned char user_sel = usart_getchar();
 		if (user_sel == 'M' || user_sel == 'm' ){
-			v = readADC();
+			v = ADC_to_V(readADC());
 			sprintf(str, "v = %.3f V\n\r", v);
 			usart_prints(str);
 		} else if (user_sel == 'S' || user_sel == 's') {
@@ -177,18 +179,13 @@ char echo(void) {
 
 // read ADC voltage level
 // TODO convert to uint16_t
-float readADC(){
+uint16_t readADC(){
 	ADCSRA |= (1<< ADSC); // start conversion
 	while (ADCSRA & (1<<ADSC)){ // wait for conversion to finish
 	}
 	uint8_t adc_low = ADCL;
 	uint16_t adc_val = ADCH<<8 | adc_low;
-	double adc_float = (double) adc_val;
-	double v_val = (adc_float * 5.0) / 1024.0;
-	return v_val ;
-
-	uint8_t low = adc_val & 0x00FF;
-	uint8_t high = (adc_val>>8);
+	return adc_val;
 }
 
 void modeS(){
@@ -197,23 +194,31 @@ void modeS(){
 //		n = number of measurements (1 ≤ n ≤ 20) 
 //		t = time between measurements (1 ≤ t ≤ 10 s)
 	float adc_val;
-	int a;
-	int n;
-	int t;
-	for (int i = 0, i < n; i++){
+	int a = 0;
+	int n = 255;
+	int t = 0;
+	unsigned int address = (unsigned int) a;
+	char str[25];
+	for (int i = 0; i < n; i++){
 		// get ADC value
 		adc_val = readADC();
 
 		// Write to Address 
-		int address = a + (i*2); // each value takes 2 EEPROM slots
-		EEPROM_write((a + (i*2)), adc_val)
+		EEPROM_write(address, (unsigned int) getHigh(adc_val));
+		address++;
+		EEPROM_write(address, (unsigned int) getLow(adc_val));
+		address++;
 
 		// Send user info about reading
-		// TODO
+		sprintf(str, "t = %d, v = %.3f V, addr: %d\n\r", i, ADC_to_V(adc_val), address);
+		usart_prints(str);
+		sprintf(str, "high = %d low = %d \n\r", (unsigned int) getHigh(adc_val), (unsigned int) getLow(adc_val));
+		usart_prints(str);
 
 		// wait for next measurement
 		for (int x=0; x <t; x++){
 			// wait one second
+			_delay_ms(1000);
 		}
 	}
 }
@@ -222,8 +227,26 @@ void modeR(){
 // Mode R - user input of the format "R:a,n" where:
 //		a = eeprom start address (0 ≤ a ≤ 510)
 //		n = number of measurements (1 ≤ n ≤ 20)
+//TODO - address should only be even numbers 
+	int a = 0;
+	int n = 4;
+	unsigned int address = (unsigned int) a;
+	char str[25];
+
 	for (int i = 0; i < n; i++) {
-		
+		// Get stored value from EEPROM
+		uint8_t adc_high = (uint8_t) EEPROM_read(address); // returns the high byte
+		address++;
+		uint8_t adc_low = (uint8_t) EEPROM_read(address); // returns the low byte
+		address++;
+		uint16_t adc = adc_high<<8 | adc_low;
+
+		// Send user info about reading
+		double v = ADC_to_V(adc);
+		sprintf(str, "v = %.3f V\n\r", v);
+		usart_prints(str);
+		sprintf(str, "high = %d low = %d \n\r", adc_high, adc_low);
+		usart_prints(str);
 	}
 
 }
@@ -243,7 +266,6 @@ EECR |= (1<<EEPE);
 }
 
 // From ATmega88PA Datasheet:
-// unsigned char is 1 byte
 unsigned char EEPROM_read(unsigned int uiAddress) {
 /* Wait for completion of previous write */
 while(EECR & (1<<EEPE))
@@ -261,4 +283,14 @@ float ADC_to_V(uint16_t adc_val){
 	double adc_float = (double) adc_val;
 	double v_val = (adc_float * 5.0) / 1024.0;
 	return v_val;
+}
+
+uint8_t getLow(uint16_t adc_val){
+	uint8_t low = adc_val & 0x00FF;
+	return low;
+}
+
+uint8_t getHigh(uint16_t adc_val){
+	uint8_t high = (adc_val>>8);
+	return high;
 }
