@@ -71,8 +71,8 @@ int main(void){
 	adc_init();
 	for (int x = 0; x<5; x++){
 		v = readADC();
-		sprintf(str, "v = %.3f V\n", v);
-		usart_prints(str);
+		//sprintf(str, "v = %.3f V\n", v);
+		//usart_prints(str);
 	}
 
 	return(1);
@@ -177,5 +177,13 @@ float readADC(){
 	while (!(ADCSRA & (1<<ADIF))) { // loop until bit is set (i.e. loop while bit is low)
 		; // wait for conversion to finish
 	}	
-	return ((ADCL * V_REF) / 1024.0) ;
+	uint16_t adc_val = (ADCH<<8) | (ADCL);
+	unsigned int adc_int = (unsigned int) adc_val;
+	int v_val = (adc_int * V_REF) / 1024.0;
+	//double v_val = ((double)adc_int * V_REF) / 1024.0;
+	char str[25];
+	sprintf(str, "v = %d V\n", adc_int);
+	//sprintf(str, "v = %.3f V\n", v_val); // uses a double
+	usart_prints(str);
+	return (1) ;
 }
