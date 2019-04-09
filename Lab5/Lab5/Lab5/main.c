@@ -4,7 +4,6 @@
  * Created: 4/4/2019 9:07:46 AM
  * Authors : McLaughlin, Meghan & McNamara, Dylan
  */ 
-
 #define F_CPU 8000000L
 
 
@@ -52,7 +51,7 @@ int main(void){
 	usart_init();
 	usart_prints(sdata);
 	usart_printf(fdata);
-		//while (1){
+		while (0){
 			usart_prints("\n SELECT A MODE: M, S, R, E\n");
 
 			unsigned char user_sel = usart_getchar();
@@ -66,13 +65,12 @@ int main(void){
 				usart_prints("User selected E\n");
 				} else {
 				usart_prints("Unrecognized Input\n");
-			//}
+			}
 	}
 	adc_init();
 	for (int x = 0; x<5; x++){
 		v = readADC();
-		//sprintf(str, "v = %.3f V\n", v);
-		//usart_prints(str);
+		_delay_ms(100);
 	}
 
 	return(1);
@@ -85,8 +83,8 @@ void adc_init(void){
 	// ADEN = ADC Enable
 	// ADSC = ADC Start Conversion
 	// ADATE = ADATE ADC Auto Trigger Enable
-	// ADPS[2:0] = Prescalar Select - not needed?
-	ADCSRA = (1<<ADEN) | (1<<ADATE);
+	// ADPS[2:0] = Prescalar Select - 32
+	ADCSRA = (1<<ADEN) | (1<<ADATE) | (1<<ADPS2) | (1<<ADPS1) ;
 }
 
 // initialize the USART
@@ -174,16 +172,21 @@ void echo4(void) {
 // read ADC voltage level
 float readADC(){
 	ADCSRA |= (1<< ADSC); // start conversion
-	while (!(ADCSRA & (1<<ADIF))) { // loop until bit is set (i.e. loop while bit is low)
+	//while (!(ADCSRA) | (0b10111111)) { //loop until bit is cleared 
+	while (ADCSRA & (1<<ADSC)){
 		; // wait for conversion to finish
-	}	
-	uint16_t adc_val = (ADCH<<8) | (ADCL);
+	}
+	uint8_t adc_low = ADCL;
+	uint16_t adc_val = ADCH<<8 | adc_low;
 	unsigned int adc_int = (unsigned int) adc_val;
-	int v_val = (adc_int * V_REF) / 1024.0;
-	//double v_val = ((double)adc_int * V_REF) / 1024.0;
+	double adc_float = (double) adc_int;
+	//int v_val = (adc_int * V_REF) / 1024;
+	//double v_val = 100.000;
+	double v_val = (adc_float * 5.0) / 1024.0;
 	char str[25];
-	sprintf(str, "v = %d V\n", adc_int);
-	//sprintf(str, "v = %.3f V\n", v_val); // uses a double
+	sprintf(str, "ADC Reg. Value = %d \n", adc_int);
+	usart_prints(str);
+	sprintf(str, "v = %.3f V\n", v_val); // uses a double
 	usart_prints(str);
 	return (1) ;
 }
