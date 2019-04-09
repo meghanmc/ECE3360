@@ -37,8 +37,13 @@ void usart_printf(const char *ptr);
 void usart_putchar(const char c);
 unsigned char usart_getchar(void);
 void adc_init();
-void echo4(void);
+char echo(void);
 float readADC();
+void modeS();
+void modeR();
+float ADC_to_V(uint16_t adc_val);
+unsigned char EEPROM_read(unsigned int uiAddress);
+void EEPROM_write(unsigned int uiAddress, unsigned char ucData);
 
 
 int main(void){	
@@ -63,9 +68,10 @@ int main(void){
 			usart_prints(str);
 		} else if (user_sel == 'S' || user_sel == 's') {
 			usart_prints("User selected STORE\n\r");
-		} else if (user_sel == 'R') {
-			usart_prints("User selected RETRIEVE\n\r");
-		} else if (user_sel == 'E') {
+			modeS();
+		} else if (user_sel == 'R' || user_sel == 'r') {
+			modeR();
+		} else if (user_sel == 'E' || user_sel == 'e') {
 			usart_prints("User selected E\n\r");
 		} else {
 			usart_prints("Unrecognized Input\n\r");
@@ -100,6 +106,7 @@ void usart_init(void){
 	//Asynchronous USART, 8 data bits, NO parity, 1 stop bits
 	// TODO - per lab specifications, should be 8 bit, even, 2 stop bits
 	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
+	// TODO - try setting the parity bit on a separate line
 }
 
 // print a string from SRAM
@@ -161,14 +168,15 @@ ISR(USART_RX_vect)
 	rx_buffer_head++;
 }
 
-void echo4(void) {
-   for (int i=0;i<=4-1;i++){
-	   unsigned char c = usart_getchar();    // Get character
-	   usart_putchar(c);					// Echo it back
-   }
+char echo(void) {
+
+	unsigned char c = usart_getchar();    // Get character
+	usart_putchar(c);					// Echo it back
+	return c; // return this 
 }
 
 // read ADC voltage level
+// TODO convert to uint16_t
 float readADC(){
 	ADCSRA |= (1<< ADSC); // start conversion
 	while (ADCSRA & (1<<ADSC)){ // wait for conversion to finish
@@ -177,6 +185,80 @@ float readADC(){
 	uint16_t adc_val = ADCH<<8 | adc_low;
 	double adc_float = (double) adc_val;
 	double v_val = (adc_float * 5.0) / 1024.0;
-	char str[25];
 	return v_val ;
+
+	uint8_t low = adc_val & 0x00FF;
+	uint8_t high = (adc_val>>8);
+}
+
+void modeS(){
+// Mode S - user input of the format "S:a,n,t" where:
+//		a = eeprom start address (0 ≤ a ≤ 510)
+//		n = number of measurements (1 ≤ n ≤ 20) 
+//		t = time between measurements (1 ≤ t ≤ 10 s)
+	float adc_val;
+	int a;
+	int n;
+	int t;
+	for (int i = 0, i < n; i++){
+		// get ADC value
+		adc_val = readADC();
+
+		// Write to Address 
+		int address = a + (i*2); // each value takes 2 EEPROM slots
+		EEPROM_write((a + (i*2)), adc_val)
+
+		// Send user info about reading
+		// TODO
+
+		// wait for next measurement
+		for (int x=0; x <t; x++){
+			// wait one second
+		}
+	}
+}
+
+void modeR(){
+// Mode R - user input of the format "R:a,n" where:
+//		a = eeprom start address (0 ≤ a ≤ 510)
+//		n = number of measurements (1 ≤ n ≤ 20)
+	for (int i = 0; i < n; i++) {
+		
+	}
+
+}
+
+// From ATmega88PA Datasheet:
+void EEPROM_write(unsigned int uiAddress, unsigned char ucData) {
+/* Wait for completion of previous write */
+while(EECR & (1<<EEPE))
+;
+/* Set up address and Data Registers */
+EEAR = uiAddress;
+EEDR = ucData;
+/* Write logical one to EEMPE */
+EECR |= (1<<EEMPE);
+/* Start eeprom write by setting EEPE */
+EECR |= (1<<EEPE);
+}
+
+// From ATmega88PA Datasheet:
+// unsigned char is 1 byte
+unsigned char EEPROM_read(unsigned int uiAddress) {
+/* Wait for completion of previous write */
+while(EECR & (1<<EEPE))
+;
+/* Set up address register */
+EEAR = uiAddress;
+/* Start eeprom read by writing EERE */
+EECR |= (1<<EERE);
+/* Return data from Data Register */
+return EEDR;
+}
+
+// Converts ADC register value to a float
+float ADC_to_V(uint16_t adc_val){
+	double adc_float = (double) adc_val;
+	double v_val = (adc_float * 5.0) / 1024.0;
+	return v_val;
 }
