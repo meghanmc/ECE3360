@@ -11,6 +11,9 @@
 // define baud rate as 9600
 #define BAUD 9600
 
+// define ADC Reference Voltage - 5.0 V
+#define V_REF 5.0
+
 // set up receive buffer
 #define RX_BUFFER_SIZE 64 // TODO does this size matter?
 unsigned char rx_buffer[RX_BUFFER_SIZE];
@@ -34,18 +37,22 @@ void usart_prints(const char *ptr);
 void usart_printf(const char *ptr);
 void usart_putchar(const char c);
 unsigned char usart_getchar(void);
+void adc_init();
 void echo4(void);
-int readADC(void);
+float readADC();
 
 
 int main(void){	
+	// initialize var
+	float v;
+	char str[25];
+	
 	// enable global interrupts
 	sei();
-	adc_init();
 	usart_init();
 	usart_prints(sdata);
 	usart_printf(fdata);
-		while (1){
+		//while (1){
 			usart_prints("\n SELECT A MODE: M, S, R, E\n");
 
 			unsigned char user_sel = usart_getchar();
@@ -59,7 +66,13 @@ int main(void){
 				usart_prints("User selected E\n");
 				} else {
 				usart_prints("Unrecognized Input\n");
-			}
+			//}
+	}
+	adc_init();
+	for (int x = 0; x<5; x++){
+		v = readADC();
+		sprintf(str, "v = %.3f V\n", v);
+		usart_prints(str);
 	}
 
 	return(1);
@@ -67,13 +80,13 @@ int main(void){
 
 // setup ADC
 void adc_init(void){
-	ADMUX = (0<<REFS1) | (1<<REFS0) ;
+	ADMUX = (0<<REFS1) | (1<<REFS0) | (1<<MUX0); // set ADMUX0 as ADC input, set mode as AVcc with ext. capacitor at AREF pin
 
 	// ADEN = ADC Enable
 	// ADSC = ADC Start Conversion
 	// ADATE = ADATE ADC Auto Trigger Enable
-
-	ADCSRA = (1<<ADEN) | (1<<ADATE)
+	// ADPS[2:0] = Prescalar Select - not needed?
+	ADCSRA = (1<<ADEN) | (1<<ADATE);
 }
 
 // initialize the USART
@@ -159,7 +172,10 @@ void echo4(void) {
 }
 
 // read ADC voltage level
-int readADC(){
-	return 0;
-	int adc = 
+float readADC(){
+	ADCSRA |= (1<< ADSC); // start conversion
+	while (!(ADCSRA & (1<<ADIF))) { // loop until bit is set (i.e. loop while bit is low)
+		; // wait for conversion to finish
+	}	
+	return ((ADCL * V_REF) / 1024.0) ;
 }
