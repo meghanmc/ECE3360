@@ -190,13 +190,19 @@ uint16_t readADC(){
 
 void modeS(){
 // Mode S - user input of the format "S:a,n,t" where:
-//		a = eeprom start address (0 ≤ a ≤ 510)
-//		n = number of measurements (1 ≤ n ≤ 20) 
-//		t = time between measurements (1 ≤ t ≤ 10 s)
+//		a = eeprom start address (0 <= a <= 510)
+//		n = number of measurements (1 <= n <= 20) 
+//		t = time between measurements (1 <= t <= 10 s)
 	float adc_val;
 	int a = 0;
-	int n = 255;
-	int t = 0;
+	int n = 4;
+	int t = 1;
+	
+	// addresses should only be even numbers as each entry takes 2 address slots
+	if (a%2) {
+		a = a-1;
+	}
+	
 	unsigned int address = (unsigned int) a;
 	char str[25];
 	for (int i = 0; i < n; i++){
@@ -212,8 +218,6 @@ void modeS(){
 		// Send user info about reading
 		sprintf(str, "t = %d, v = %.3f V, addr: %d\n\r", i, ADC_to_V(adc_val), address);
 		usart_prints(str);
-		sprintf(str, "high = %d low = %d \n\r", (unsigned int) getHigh(adc_val), (unsigned int) getLow(adc_val));
-		usart_prints(str);
 
 		// wait for next measurement
 		for (int x=0; x <t; x++){
@@ -225,13 +229,19 @@ void modeS(){
 
 void modeR(){
 // Mode R - user input of the format "R:a,n" where:
-//		a = eeprom start address (0 ≤ a ≤ 510)
-//		n = number of measurements (1 ≤ n ≤ 20)
+//		a = eeprom start address (0 <= a <= 510)
+//		n = number of measurements (1 <= n <= 20)
 //TODO - address should only be even numbers 
-	int a = 0;
+	int a = 1;
 	int n = 4;
-	unsigned int address = (unsigned int) a;
 	char str[25];
+	
+	// addresses should only be even numbers as each entry takes 2 address slots
+	if (a%2) {
+		a = a-1;
+	}
+	
+	int address = a;
 
 	for (int i = 0; i < n; i++) {
 		// Get stored value from EEPROM
@@ -244,8 +254,6 @@ void modeR(){
 		// Send user info about reading
 		double v = ADC_to_V(adc);
 		sprintf(str, "v = %.3f V\n\r", v);
-		usart_prints(str);
-		sprintf(str, "high = %d low = %d \n\r", adc_high, adc_low);
 		usart_prints(str);
 	}
 
