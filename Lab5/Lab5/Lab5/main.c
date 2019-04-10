@@ -14,10 +14,10 @@
 #define V_REF 5.0
 
 // set up receive buffer
-#define RX_BUFFER_SIZE 64 // TODO does this size matter?
+#define RX_BUFFER_SIZE 64
 unsigned char rx_buffer[RX_BUFFER_SIZE];
 volatile unsigned char rx_buffer_head;
-volatile unsigned char rx_buffer_tail; // TODO does this need volatile keyword??
+volatile unsigned char rx_buffer_tail;
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
@@ -26,27 +26,30 @@ volatile unsigned char rx_buffer_tail; // TODO does this need volatile keyword??
 #include <avr/pgmspace.h>
 #include <stdio.h>
 
-// store strings in SRAM and FLASH
-const char sdata[] = "This string is in SRAM\n\r";
-const char fdata[] PROGMEM = "This string is in FLASH\n\r";
-
-// function prototypes
+/* USART functions */
 void usart_init(void);
 void usart_prints(const char *ptr);
 void usart_printf(const char *ptr);
 void usart_putchar(const char c);
 unsigned char usart_getchar(void);
-void adc_init();
 char echo(void);
+void getUserString(char *str);
+
+/* ADC functions */
+void adc_init();
 uint16_t readADC();
-void modeS();
-void modeR();
 float ADC_to_V(uint16_t adc_val);
+
+/* EEPROM functions */
 unsigned char EEPROM_read(unsigned int uiAddress);
 void EEPROM_write(unsigned int uiAddress, unsigned char ucData);
+
+/* helper functions */
+void modeS();
+void modeR();
+void modeE();
 uint8_t getLow(uint16_t adc_val);
 uint8_t getHigh(uint16_t adc_val);
-void getUserString(char *str);
 
 
 int main(void){	
@@ -58,9 +61,7 @@ int main(void){
 	sei();
 	usart_init();
 	adc_init();
-	// TODO - remove these later
-	//usart_prints(sdata);
-	//usart_printf(fdata);
+
 	while (1){
 		usart_prints("\n\rSELECT A MODE: ");
 
@@ -77,24 +78,12 @@ int main(void){
 			modeR();
 		} else if (user_sel == 'E' || user_sel == 'e') {
 			usart_putchar(':');
-			usart_prints("\n\rUser selected E");
+			modeE();
 		} else {
 			usart_prints("\n\rUnrecognized Input");
 		}
 	}
-
 	return(1);
-}
-
-// setup ADC
-void adc_init(void){
-	// set ADMUX0 as ADC input, set mode as AVcc with ext. capacitor at AREF pin
-	ADMUX = (0<<REFS1) | (1<<REFS0);
-
-	// ADEN = ADC Enable
-	// ADSC = ADC Start Conversion
-	// ADPS[2:0] = Prescalar Select - 64
-	ADCSRA = (1<<ADEN)| (1<<ADPS2) | (1<<ADPS1);
 }
 
 // initialize the USART
@@ -180,8 +169,18 @@ char echo(void) {
 	return c; // return this 
 }
 
+// setup ADC
+void adc_init(void){
+	// set ADMUX0 as ADC input, set mode as AVcc with ext. capacitor at AREF pin
+	ADMUX = (0<<REFS1) | (1<<REFS0);
+
+	// ADEN = ADC Enable
+	// ADSC = ADC Start Conversion
+	// ADPS[2:0] = Prescalar Select - 64
+	ADCSRA = (1<<ADEN)| (1<<ADPS2) | (1<<ADPS1);
+}
+
 // read ADC voltage level
-// TODO convert to uint16_t
 uint16_t readADC(){
 	ADCSRA |= (1<< ADSC); // start conversion
 	while (ADCSRA & (1<<ADSC)){ // wait for conversion to finish
@@ -196,8 +195,9 @@ void modeS(){
 //		a = eeprom start address (0 <= a <= 510)
 //		n = number of measurements (1 <= n <= 20) 
 //		t = time between measurements (1 <= t <= 10 s)
+
 	float adc_val;
-	int a; //todo remove these later
+	int a;
 	int n;
 	int t;
 	
@@ -209,7 +209,7 @@ void modeS(){
 	int n_count =0; // counter for the number of digits in n
 	int t_count =0; // counter for the number of digits in r
 
-	// Parse the string, splitting on commas
+	// Get a value
 	while(str[i]!=','){
 		// this value is a
 		a_count++;
@@ -219,14 +219,19 @@ void modeS(){
 	char a_str[a_count+1];//remember null terminator
 	strncpy(a_str, str, a_count);
 	a = atoi(a_str);
+
+	// Get n value
 	while(str[i]!=','){
 		// this value is n
 		n_count++;
 		i++;
 	}
+	i++;
 	char n_str[n_count+1];//remember null terminator
 	strncpy(n_str, str+a_count+1,n_count);
 	n = atoi(n_str);
+
+	// Get t value
 	while(str[i]!='\0'){
 		// this value is t
 		t_count++;
@@ -239,6 +244,12 @@ void modeS(){
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
 		a = a-1;
+	}
+
+	// User selection validation
+	if ( (a<0) | (a>255) | (n<1) | (n>20) | (t<1) | (t>10) ){
+		usart_prints("\n\rInvalid Selection");
+		return;
 	}
 		
 	unsigned int address = (unsigned int) a;
@@ -269,7 +280,7 @@ void modeR(){
 // Mode R - user input of the format "R:a,n" where:
 //		a = eeprom start address (0 <= a <= 510)
 //		n = number of measurements (1 <= n <= 20)
-	int a; //todo remove these later
+	int a;
 	int n;
 	char str[25];
 	
@@ -278,28 +289,34 @@ void modeR(){
 	int a_count = 0; // counter for the number of digits in a
 	int n_count =0; // counter for the number of digits in n
 
-		// Parse the string, splitting on commas
-		while(str[i]!=','){
-			// this value is a
-			a_count++;
-			i++;
-		}
+	// Parse the string, splitting on commas
+	while(str[i]!=','){
+		// this value is a
+		a_count++;
 		i++;
-		char a_str[a_count+1];//remember null terminator
-		strncpy(a_str, str, a_count);
-		a = atoi(a_str);
-		while(str[i]!='\0'){
-			// this value is n
-			n_count++;
-			i++;
-		}
-		char n_str[n_count+1];//remember null terminator
-		strncpy(n_str, str+a_count+1,n_count);
-		n = atoi(n_str);
+	}
+	i++;
+	char a_str[a_count+1];//remember null terminator
+	strncpy(a_str, str, a_count);
+	a = atoi(a_str);
+	while(str[i]!='\0'){
+		// this value is n
+		n_count++;
+		i++;
+	}
+	char n_str[n_count+1];//remember null terminator
+	strncpy(n_str, str+a_count+1,n_count);
+	n = atoi(n_str);
 	
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
 		a = a-1;
+	}
+
+	// User selection validation
+	if ( (a<0) | (a>255) | (n<1) | (n>20)){
+		usart_prints("\n\rInvalid Selection");
+		return;
 	}
 	
 	int address = a;
@@ -318,6 +335,80 @@ void modeR(){
 		usart_prints(str);
 	}
 
+}
+
+void modeE(){
+// Mode E - user input of the format "E:a,n,t,d" where:
+//		a = eeprom start address (0 <= a <= 510)
+//		n = number of measurements (1 <= n <= 20)
+//		t = time between measurements (1 <= t <= 10 s)
+//		d = DAC channel (0 or 1)
+	int a;
+	int n;
+	int t;
+	int d;
+	
+	char str[25];
+
+	getUserString(str); // get a, n, t, d from the user
+	int i = 0; // counter for parsing string
+	int a_count = 0; // counter for the number of digits in a
+	int n_count = 0; // counter for the number of digits in n
+	int t_count = 0; // counter for the number of digits in t
+	int d_count = 0; // counter for the number of digits in d (should always be 1)
+
+	// Get a value
+	while(str[i]!=','){
+		a_count++;
+		i++;
+	}
+	i++;
+	char a_str[a_count+1];//remember null terminator
+	strncpy(a_str, str, a_count);
+	a = atoi(a_str);
+
+	// Get n value
+	while(str[i]!=','){
+		n_count++;
+		i++;
+	}
+	i++;
+	char n_str[n_count+1];//remember null terminator
+	strncpy(n_str, str+a_count+1,n_count);
+	n = atoi(n_str);
+
+	// Get t value
+	while(str[i]!=','){
+		t_count++;
+		i++;
+	}
+	i++; //increment over ','
+	char t_str[t_count+1];//remember null terminator
+	strncpy(t_str, str+a_count+1+n_count+1,t_count);
+	t = atoi(t_str);
+
+	// get d value
+	while(str[i]!='\0'){
+			d_count++;
+			i++;
+	}
+	char d_str[d_count+1];//remember null terminator
+	strncpy(d_str, str+a_count+1+n_count+1+t_count+1,1);
+	d = atoi(d_str);
+
+	// addresses should only be even numbers as each entry takes 2 address slots
+	if (a%2) {
+		a = a-1;
+	}
+
+	// User selection validation
+	if ( (a<0) | (a>255) | (n<1) | (n>20) | (t<1) | (t>10) | (d<0) | (d>1)){
+		usart_prints("\n\rInvalid Selection");
+		return;
+	}
+
+	sprintf(str, "\n\ra = %d n = %d t = %d d = %d", a, n, t, d);
+	usart_prints(str);
 }
 
 // From ATmega88PA Datasheet:
