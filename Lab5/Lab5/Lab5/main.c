@@ -48,8 +48,9 @@ void EEPROM_write(unsigned int uiAddress, unsigned char ucData);
 void modeS();
 void modeR();
 void modeE();
-uint8_t getLow(uint16_t adc_val);
-uint8_t getHigh(uint16_t adc_val);
+uint8_t get_l(uint16_t adc_val);
+uint8_t get_h(uint16_t adc_val);
+uint8_t conv_16_to_8(uint16_t val_16);
 
 
 int main(void){	
@@ -259,9 +260,9 @@ void modeS(){
 		adc_val = readADC();
 
 		// Write to Address 
-		EEPROM_write(address, (unsigned int) getHigh(adc_val));
+		EEPROM_write(address, (unsigned int) get_h(adc_val));
 		address++;
-		EEPROM_write(address, (unsigned int) getLow(adc_val));
+		EEPROM_write(address, (unsigned int) get_l(adc_val));
 		address++;
 
 		// Send user info about reading
@@ -329,17 +330,15 @@ void modeR(){
 		address++;
 		uint16_t adc = adc_high<<8 | adc_low;
 
-		// TODO - remove this if it doesn't work
 		if (adc == 0xFFFF){
 			sprintf(str, "\n\rNo value stored at address %d", a);
 			usart_prints(str);
+		} else {
+			// Send user info about reading
+			double v = ADC_to_V(adc);
+			sprintf(str, "\n\rv = %.3f V", v);
+			usart_prints(str);
 		}
-		// end TODO
-
-		// Send user info about reading
-		double v = ADC_to_V(adc);
-		sprintf(str, "\n\rv = %.3f V", v);
-		usart_prints(str);
 	}
 
 }
@@ -414,8 +413,37 @@ void modeE(){
 		return;
 	}
 
-	sprintf(str, "\n\ra = %d n = %d t = %d d = %d", a, n, t, d);
-	usart_prints(str);
+	int address = a;
+	for (int i = 0; i < n; i++) {
+		// Get stored value from EEPROM
+		uint8_t adc_high = (uint8_t) EEPROM_read(address); // returns the high byte
+		address++;
+		uint8_t adc_low = (uint8_t) EEPROM_read(address); // returns the low byte
+		address++;
+		uint16_t adc = adc_high<<8 | adc_low;
+
+		if (adc == 0xFFFF){
+			sprintf(str, "\n\rNo value stored at address %d", (address-2));
+			usart_prints(str);
+		} else {
+			// Send user info about reading
+			// Convert ADC value to DAC (8-bit value)
+			double v = ADC_to_V(adc);
+			uint8_t dac_val = conv_16_to_8(adc);
+
+			// For each value, set the specified DAC channel to the stored voltage
+
+			// Send data to the user
+			sprintf(str, "\n\rt = %d DAC channel %d set to %.3f V", (i*t), d, v);
+			usart_prints(str);
+
+		}
+		// wait specified time
+		for (int x=0; x <t; x++){
+			// wait one second
+			_delay_ms(1000);
+		}
+	}
 }
 
 // From ATmega88PA Datasheet:
@@ -452,14 +480,20 @@ float ADC_to_V(uint16_t adc_val){
 	return v_val;
 }
 
-uint8_t getLow(uint16_t adc_val){
+uint8_t get_l(uint16_t adc_val){
 	uint8_t low = adc_val & 0x00FF;
 	return low;
 }
 
-uint8_t getHigh(uint16_t adc_val){
+uint8_t get_h(uint16_t adc_val){
 	uint8_t high = (adc_val>>8);
 	return high;
+}
+
+uint8_t conv_16_to_8(uint16_t val_16){
+	val_16 = (val_16>>2);
+	uint8_t val_8 = val_16 & 0x00FF;
+	return val_8;
 }
 
 void getUserString(char *str){
