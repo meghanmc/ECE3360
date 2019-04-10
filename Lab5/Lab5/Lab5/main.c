@@ -295,7 +295,7 @@ void modeR(){
 		}
 		char n_str[n_count+1];//remember null terminator
 		strncpy(n_str, str+a_count+1,n_count);
-		n = atoi(a_str);
+		n = atoi(n_str);
 	
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
