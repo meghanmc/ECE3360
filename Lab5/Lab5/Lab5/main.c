@@ -329,6 +329,13 @@ void modeR(){
 		address++;
 		uint16_t adc = adc_high<<8 | adc_low;
 
+		// TODO - remove this if it doesn't work
+		if (adc == 0xFFFF){
+			sprintf(str, "\n\rNo value stored at address %d", a);
+			usart_prints(str);
+		}
+		// end TODO
+
 		// Send user info about reading
 		double v = ADC_to_V(adc);
 		sprintf(str, "\n\rv = %.3f V", v);
