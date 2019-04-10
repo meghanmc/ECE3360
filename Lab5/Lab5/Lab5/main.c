@@ -46,6 +46,7 @@ unsigned char EEPROM_read(unsigned int uiAddress);
 void EEPROM_write(unsigned int uiAddress, unsigned char ucData);
 uint8_t getLow(uint16_t adc_val);
 uint8_t getHigh(uint16_t adc_val);
+void getUserString(char *str);
 
 
 int main(void){	
@@ -69,7 +70,6 @@ int main(void){
 			sprintf(str, "v = %.3f V\n\r", v);
 			usart_prints(str);
 		} else if (user_sel == 'S' || user_sel == 's') {
-			usart_prints("User selected STORE\n\r");
 			modeS();
 		} else if (user_sel == 'R' || user_sel == 'r') {
 			modeR();
@@ -205,6 +205,10 @@ void modeS(){
 	
 	unsigned int address = (unsigned int) a;
 	char str[25];
+	
+	getUserString(str); // get a, n, t from the user
+	// TODO - convert to a n t values
+	
 	for (int i = 0; i < n; i++){
 		// get ADC value
 		adc_val = readADC();
@@ -235,6 +239,9 @@ void modeR(){
 	int a = 1;
 	int n = 4;
 	char str[25];
+	
+	getUserString(str); // get a, n from the user
+	// TODO convert to a, n values
 	
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
@@ -301,4 +308,24 @@ uint8_t getLow(uint16_t adc_val){
 uint8_t getHigh(uint16_t adc_val){
 	uint8_t high = (adc_val>>8);
 	return high;
+}
+
+void getUserString(char *str){
+	// clear the string
+	for (int i = 0; i<25;i++){
+		str[i] = '\0';
+	}
+	char c;
+	int i = 0;
+	while(1){
+		c = echo();
+		if (c == ' '){
+			// endline, break loop
+			str[i]='\0';
+			return;
+		} else {
+			str[i] = c;
+			i++;
+		}
+	}
 }
