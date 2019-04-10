@@ -62,21 +62,24 @@ int main(void){
 	//usart_prints(sdata);
 	//usart_printf(fdata);
 	while (1){
-		usart_prints("\nSELECT A MODE: M, S, R, E\n\r");
+		usart_prints("\n\rSELECT A MODE: ");
 
-		unsigned char user_sel = usart_getchar();
+		unsigned char user_sel = echo();
 		if (user_sel == 'M' || user_sel == 'm' ){
 			v = ADC_to_V(readADC());
-			sprintf(str, "v = %.3f V\n\r", v);
+			sprintf(str, "\n\rv = %.3f V", v);
 			usart_prints(str);
 		} else if (user_sel == 'S' || user_sel == 's') {
+			usart_putchar(':');
 			modeS();
 		} else if (user_sel == 'R' || user_sel == 'r') {
+			usart_putchar(':');
 			modeR();
 		} else if (user_sel == 'E' || user_sel == 'e') {
-			usart_prints("User selected E\n\r");
+			usart_putchar(':');
+			usart_prints("\n\rUser selected E");
 		} else {
-			usart_prints("Unrecognized Input\n\r");
+			usart_prints("\n\rUnrecognized Input");
 		}
 	}
 
@@ -106,9 +109,9 @@ void usart_init(void){
 	UCSR0B = (1<<RXCIE0)|(1<<RXEN0)|(1<<TXEN0);
 
 	//Asynchronous USART, 8 data bits, NO parity, 1 stop bits
-	// TODO - per lab specifications, should be 8 bit, even, 2 stop bits
+	UCSR0C = (1<<UPM01) | (1<<USBS0);
+	// SET THIS ON 2 SEPARATE LINES FOR SOME REASON?
 	UCSR0C = (1<<UCSZ01)|(1<<UCSZ00);
-	// TODO - try setting the parity bit on a separate line
 }
 
 // print a string from SRAM
@@ -194,21 +197,52 @@ void modeS(){
 //		n = number of measurements (1 <= n <= 20) 
 //		t = time between measurements (1 <= t <= 10 s)
 	float adc_val;
-	int a = 0;
-	int n = 4;
-	int t = 1;
+	int a; //todo remove these later
+	int n;
+	int t;
 	
+	char str[25];
+
+	getUserString(str); // get a, n, t from the user
+	int i = 0; // counter for parsing string
+	int a_count = 0; // counter for the number of digits in a
+	int n_count =0; // counter for the number of digits in n
+	int t_count =0; // counter for the number of digits in r
+
+	// Parse the string, splitting on commas
+	while(str[i]!=','){
+		// this value is a
+		a_count++;
+		i++;
+	}
+	i++;
+	char a_str[a_count+1];//remember null terminator
+	strncpy(a_str, str, a_count);
+	a = atoi(a_str);
+	while(str[i]!=','){
+		// this value is n
+		n_count++;
+		i++;
+	}
+	char n_str[n_count+1];//remember null terminator
+	strncpy(n_str, str+a_count+1,n_count);
+	n = atoi(n_str);
+	while(str[i]!='\0'){
+		// this value is t
+		t_count++;
+		i++;
+	}
+	char t_str[t_count+1];//remember null terminator
+	strncpy(t_str, str+a_count+1+n_count+1,t_count);
+	t = atoi(t_str);
+
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
 		a = a-1;
 	}
-	
+		
 	unsigned int address = (unsigned int) a;
-	char str[25];
-	
-	getUserString(str); // get a, n, t from the user
-	// TODO - convert to a n t values
-	
+
 	for (int i = 0; i < n; i++){
 		// get ADC value
 		adc_val = readADC();
@@ -220,7 +254,7 @@ void modeS(){
 		address++;
 
 		// Send user info about reading
-		sprintf(str, "t = %d, v = %.3f V, addr: %d\n\r", i, ADC_to_V(adc_val), address);
+		sprintf(str, "\n\rt = %d, v = %.3f V, addr: %d", i, ADC_to_V(adc_val), address-2); // address-2 because address has been incremented
 		usart_prints(str);
 
 		// wait for next measurement
@@ -235,13 +269,33 @@ void modeR(){
 // Mode R - user input of the format "R:a,n" where:
 //		a = eeprom start address (0 <= a <= 510)
 //		n = number of measurements (1 <= n <= 20)
-//TODO - address should only be even numbers 
-	int a = 1;
-	int n = 4;
+	int a; //todo remove these later
+	int n;
 	char str[25];
 	
 	getUserString(str); // get a, n from the user
-	// TODO convert to a, n values
+	int i = 0; // counter for parsing string
+	int a_count = 0; // counter for the number of digits in a
+	int n_count =0; // counter for the number of digits in n
+
+		// Parse the string, splitting on commas
+		while(str[i]!=','){
+			// this value is a
+			a_count++;
+			i++;
+		}
+		i++;
+		char a_str[a_count+1];//remember null terminator
+		strncpy(a_str, str, a_count);
+		a = atoi(a_str);
+		while(str[i]!='\0'){
+			// this value is n
+			n_count++;
+			i++;
+		}
+		char n_str[n_count+1];//remember null terminator
+		strncpy(n_str, str+a_count+1,n_count);
+		n = atoi(a_str);
 	
 	// addresses should only be even numbers as each entry takes 2 address slots
 	if (a%2) {
@@ -260,7 +314,7 @@ void modeR(){
 
 		// Send user info about reading
 		double v = ADC_to_V(adc);
-		sprintf(str, "v = %.3f V\n\r", v);
+		sprintf(str, "\n\rv = %.3f V", v);
 		usart_prints(str);
 	}
 
@@ -318,7 +372,7 @@ void getUserString(char *str){
 	char c;
 	int i = 0;
 	while(1){
-		c = echo();
+		c = echo(); // read the value back to the user
 		if (c == ' '){
 			// endline, break loop
 			str[i]='\0';
