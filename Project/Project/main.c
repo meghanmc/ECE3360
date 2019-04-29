@@ -35,6 +35,7 @@ void board_int(LcdNokia *lcd_ptr);
 void write_token(LcdNokia *lcd_ptr, bool is_x, uint8_t col, uint8_t row);
 void write_player_turn(LcdNokia *lcd_ptr, bool x_turn);
 void keypad_init();
+void pin_change_init();
 uint8_t getKeyPressed();
 
 int main(void)
@@ -53,6 +54,7 @@ int main(void)
 	lcd_nokia_init();
 	lcd_nokia_clear(&lcd);
 	board_int(&lcd);
+	pin_change_init();
 	
 // End Initialization
 
@@ -161,6 +163,17 @@ void keypad_init(){
 	return;
 }
 
+void pin_change_init(){
+	//Set Pin Change Control Register
+	PCICR |= 0x04;
+	
+	//Set Pin Change Flag Register
+	PCIFR |= 0x04;
+	
+	//Set Pin Change Masks for PCINT20-PCINT23
+	PCMSK2 |= 0xF0;
+}
+
 uint8_t getKeyPressed()
 {
 	// Debounce - wait 10 MS
@@ -191,4 +204,8 @@ uint8_t getKeyPressed()
 		}
 	}
 	return 0xFF; // no key pressed
+}
+
+ISR(PCINT2_vect){
+	getKeyPressed();
 }
