@@ -120,9 +120,6 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Font.h">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="main.c">
       <SubType>compile</SubType>
     </Compile>
@@ -135,10 +132,7 @@
     <Compile Include="nlcd_chars.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="SPI_Master_C_file.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="SPI_Master_H_file.h">
+    <Compile Include="remotes.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
