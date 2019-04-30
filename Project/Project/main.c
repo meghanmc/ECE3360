@@ -40,6 +40,13 @@ uint8_t getKeyPressed();
 
 uint8_t key_val = 0xFF;
 
+ISR(PCINT2_vect){
+	// Decode keypress
+	key_val = getKeyPressed();
+	// Set PORTC back to low
+	PORTC = 0x00;
+}
+
 int main(void)
 {
 // Program Initialization
@@ -63,7 +70,28 @@ int main(void)
 // testing keypad
 	while(1){
 		//key = getKeyPressed();
-		if (key_val < 0xFF){
+		if (key_val == 0x01){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "1", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x02){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "2", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x03){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "3", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val < 0xFE){
 			lcd_nokia_set_cursor(&lcd, 0, 0);
 			lcd_nokia_write_string(&lcd, "Key Pressed", 1);
 			lcd_nokia_render(&lcd);
@@ -158,19 +186,18 @@ void write_player_turn(LcdNokia *lcd_ptr, bool x_turn){
 
 void keypad_init(){
 	// Enable Pull-Up Resistors
-	MCUCR |= (0 << PUD);
+	//MCUCR |= (0 << PUD);
+	MCUCR &= ~(1<<PUD);
 	
 	// Configure PIND[4-7] as input
 	DDRD = 0x00;
 		
-	// Enable the internal pull-ups
+	// Enable the internal pull-ups by writing logic 1 to 
 	PORTD |= 0xF0;
 	
-	// Set PC4-6 as outputs
-	// Drive PC4, 5, 6 Low
 	// Update: Set PC 0-2 as outputs
 	// Drive PC0-2 low
-	DDRC = 0x07; 
+	DDRC = 0x07;
 	PORTC = 0x00;
 	
 	return;
@@ -179,13 +206,10 @@ void keypad_init(){
 void pin_change_init(){
 
 	//Set Pin Change Masks for PCINT20-PCINT23
-	PCMSK2 |= ((1<<PCINT20) || (1<<PCINT21) || (1<<PCINT22) || (1<<PCINT23));
+	PCMSK2 |= ((1<<PCINT20) | (1<<PCINT21) | (1<<PCINT22) | (1<<PCINT23));
 
 	//Set Pin Change Control Register -  Pin Change Interrupt Enable 2
 	PCICR |= (1<<PCIE2);
-	
-	//Set Pin Change Masks for PCINT20-PCINT23
-	//PCMSK2 |= 0xF0;
 
 	//Set global interrupts
 	sei();
@@ -195,22 +219,21 @@ uint8_t getKeyPressed()
 {
 	// Debounce - wait 10 MS
 	_delay_ms(10);
-	uint8_t c;
+	uint8_t c ;
 	
 	for (c = 0; c<3; c++) {	
 		//Drive a single col pin low
-		PORTC = 0x07 && (~(1<<c));
-		
+		PORTC = 0x07 & (~(1<<c));
 
 		// Changed all of these from PORTD to PIND
-		if (bit_is_clear(0, 4)) {
+		if (bit_is_clear(PIND, 4)) {
 			// Row 1 - PD4
 			return (uint8_t)(3*0)+(c+1);
 			
 		} else if (bit_is_clear(PIND, 5)){
 			// Row 2 - PD5
 			return (uint8_t)(3*1)+(c+1);
-			
+						
 		} else if (bit_is_clear(PIND, 6)) {
 			// Row 3 - PD6
 			return (uint8_t)(3*2)+(c+1);
@@ -218,15 +241,7 @@ uint8_t getKeyPressed()
 		} else if (bit_is_clear(PIND, 7)){
 			// Row 4 - PD7
 			return (uint8_t)(3*3)+(c+1);
-		} else {
-				return 0xFF; // no key pressed
 		}
 	}
 	return 0xFF; // no key pressed
-}
-
-ISR(PCINT2_vect){
-	// Decode keypress
-	key_val = 0xFE; //debugging - see if interrrupt is even hit
-	//key_val = getKeyPressed();
 }
