@@ -38,6 +38,8 @@ void keypad_init();
 void pin_change_init();
 uint8_t getKeyPressed();
 
+uint8_t key_val = 0xFF;
+
 int main(void)
 {
 // Program Initialization
@@ -50,22 +52,31 @@ int main(void)
 	};
 	bool x_turn = true;
 	_delay_ms(500); // give the LCD time to power up
-	keypad_init();
 	lcd_nokia_init();
 	lcd_nokia_clear(&lcd);
 	board_int(&lcd);
+	keypad_init();
 	pin_change_init();
 	
 // End Initialization
 
 // testing keypad
-	uint8_t key;
 	while(1){
-		key = getKeyPressed();
-		if (key < 0xFF){
+		//key = getKeyPressed();
+		if (key_val < 0xFF){
 			lcd_nokia_set_cursor(&lcd, 0, 0);
 			lcd_nokia_write_string(&lcd, "Key Pressed", 1);
 			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0xFE){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "Interrupt", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
 		}
 
 	}
@@ -157,21 +168,27 @@ void keypad_init(){
 	
 	// Set PC4-6 as outputs
 	// Drive PC4, 5, 6 Low
-	DDRC = 0x70; 
+	// Update: Set PC 0-2 as outputs
+	// Drive PC0-2 low
+	DDRC = 0x07; 
 	PORTC = 0x00;
 	
 	return;
 }
 
 void pin_change_init(){
-	//Set Pin Change Control Register
-	PCICR |= 0x04;
-	
-	//Set Pin Change Flag Register
-	PCIFR |= 0x04;
+
+	//Set Pin Change Masks for PCINT20-PCINT23
+	PCMSK2 |= ((1<<PCINT20) || (1<<PCINT21) || (1<<PCINT22) || (1<<PCINT23));
+
+	//Set Pin Change Control Register -  Pin Change Interrupt Enable 2
+	PCICR |= (1<<PCIE2);
 	
 	//Set Pin Change Masks for PCINT20-PCINT23
-	PCMSK2 |= 0xF0;
+	//PCMSK2 |= 0xF0;
+
+	//Set global interrupts
+	sei();
 }
 
 uint8_t getKeyPressed()
@@ -182,21 +199,23 @@ uint8_t getKeyPressed()
 	
 	for (c = 0; c<3; c++) {	
 		//Drive a single col pin low
-		PORTC = 0x70 && (0<<(c+4));
+		PORTC = 0x07 && (~(1<<c));
 		
-		if (bit_is_clear(PORTD, 4)) {
+
+		// Changed all of these from PORTD to PIND
+		if (bit_is_clear(0, 4)) {
 			// Row 1 - PD4
 			return (uint8_t)(3*0)+(c+1);
 			
-		} else if (bit_is_clear(PORTD, 5)){
+		} else if (bit_is_clear(PIND, 5)){
 			// Row 2 - PD5
 			return (uint8_t)(3*1)+(c+1);
 			
-		} else if (bit_is_clear(PORTD, 6)) {
+		} else if (bit_is_clear(PIND, 6)) {
 			// Row 3 - PD6
 			return (uint8_t)(3*2)+(c+1);
 			
-		} else if (bit_is_clear(PORTD, 7)){
+		} else if (bit_is_clear(PIND, 7)){
 			// Row 4 - PD7
 			return (uint8_t)(3*3)+(c+1);
 		} else {
@@ -207,5 +226,7 @@ uint8_t getKeyPressed()
 }
 
 ISR(PCINT2_vect){
-	getKeyPressed();
+	// Decode keypress
+	key_val = 0xFE; //debugging - see if interrrupt is even hit
+	//key_val = getKeyPressed();
 }
