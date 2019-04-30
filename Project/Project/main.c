@@ -38,7 +38,14 @@ void keypad_init();
 void pin_change_init();
 uint8_t getKeyPressed();
 
+// Global Values
 uint8_t key_val = 0xFF;
+int board[3][3] = {
+		{-1,-1,-1},
+		{-1,-1,-1},
+		{-1,-1,-1}
+	};
+bool x_turn = true;
 
 ISR(PCINT2_vect){
 	// Decode keypress
@@ -52,12 +59,6 @@ int main(void)
 // Program Initialization
 	struct lcd_nokia lcd;
 	// Board is initialized as -1's. When tokens are placed, 0 = O token, 1 is X token
-	int board[3][3] = {
-		{-1,-1,-1},
-		{-1,-1,-1},
-		{-1,-1,-1}
-	};
-	bool x_turn = true;
 	_delay_ms(500); // give the LCD time to power up
 	lcd_nokia_init();
 	lcd_nokia_clear(&lcd);
@@ -68,115 +69,116 @@ int main(void)
 // End Initialization
 
 // testing keypad - delete later
+
 	while(1){
-		//key = getKeyPressed();
+		uint8_t r=0;
+		uint8_t c=0;
+		
 		if (key_val == 0x01){
+			// Pressed Row 1 - i.e. RESET/ NEW GAME
+			for (int i = 0; i < 3; i++){
+				for (int j = 0; j < 3; j++){
+					board[i][j] = -1;
+				}
+			}
+			x_turn = true;
+			
 			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "1", 1);
+			lcd_nokia_write_string(&lcd, "   New Game   ", 1);
+			lcd_nokia_render(&lcd);
+			_delay_ms(500);
+			board_int(&lcd);
+
+		}  else if (key_val == 0x04){
+			// Pressed "4" i.e. Row 0 Col 0;
+			r = 0;
+			c = 0;
+			write_token(&lcd, x_turn, COL0, ROW0);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
-		} else if (key_val == 0x02){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "2", 1);
-			lcd_nokia_render(&lcd);
-
-			// reset key to invalid value
-			key_val = 0xFF;
-		} else if (key_val == 0x03){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "3", 1);
-			lcd_nokia_render(&lcd);
-
-			// reset key to invalid value
-			key_val = 0xFF;
-		} else if (key_val == 0x04){
-				lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "4", 1);
-			lcd_nokia_render(&lcd);
-
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x05){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "5", 1);
+			// Pressed "5" i.e. Row 0 Col 1
+			r = 0;
+			c = 1;
+			write_token(&lcd, x_turn, COL1, ROW0);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x06){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "6", 1);
+			// Pressed "6" i.e. Row 0 Col 2
+			r = 0;
+			c = 2;
+			write_token(&lcd, x_turn, COL2, ROW0);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x07){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "7", 1);
+			// Pressed "7" i.e. Row 1 Col 0
+			r = 1;
+			c = 0;
+			write_token(&lcd, x_turn, COL0, ROW1);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x08){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "8", 1);
+			// Pressed "8" i.e. Row 1 Col 1
+			r = 1;
+			c = 1;
+			write_token(&lcd, x_turn, COL1, ROW1);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x09){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "9", 1);
+			// Pressed "9" i.e. Row 1 Col 2
+			r = 1;
+			c = 2;
+			write_token(&lcd, x_turn, COL2, ROW1);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x0A){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "*", 1);
+			// Pressed "*" i.e. Row 2 Col 0
+			r = 2;
+			c = 0;
+			write_token(&lcd, x_turn, COL0, ROW2);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x0B){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "0", 1);
+			// Pressed "0" i.e. Row 2 Col 2
+			r = 2;
+			c = 1;
+			write_token(&lcd, x_turn, COL1, ROW2);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
 
-			// reset key to invalid value
-			key_val = 0xFF;
 		} else if (key_val == 0x0C){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "#", 1);
+			// Pressed "#" i.e. Row 2 Col 2
+			r = 2;
+			c = 2;
+			write_token(&lcd, x_turn, COL2, ROW2);
+			x_turn = !x_turn;
+			write_player_turn(&lcd, x_turn);
 			lcd_nokia_render(&lcd);
+		} 
 
-			// reset key to invalid value
-			key_val = 0xFF;
-		} else if (key_val < 0xFE){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "Key Pressed", 1);
-			lcd_nokia_render(&lcd);
-
-			// reset key to invalid value
-			key_val = 0xFF;
-		} else if (key_val == 0xFE){
-			lcd_nokia_set_cursor(&lcd, 0, 0);
-			lcd_nokia_write_string(&lcd, "Interrupt", 1);
-			lcd_nokia_render(&lcd);
-
-			// reset key to invalid value
-			key_val = 0xFF;
-		}
+		
+		// reset key to invalid value
+		key_val = 0xFF;
 
 	}
-
-
-//end testing keypad
+//end testing keypad -- delete
 
 // Begin Game
-	
 
 	
 	// Example
@@ -248,7 +250,7 @@ void write_player_turn(LcdNokia *lcd_ptr, bool x_turn){
 	lcd_nokia_render(lcd_ptr);
 	return;
 }
-bool play(uint8_t)
+
 void keypad_init(){
 	// Enable Pull-Up Resistors
 	//MCUCR |= (0 << PUD);
