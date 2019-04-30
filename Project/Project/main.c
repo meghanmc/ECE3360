@@ -67,7 +67,7 @@ int main(void)
 	
 // End Initialization
 
-// testing keypad
+// testing keypad - delete later
 	while(1){
 		//key = getKeyPressed();
 		if (key_val == 0x01){
@@ -87,6 +87,69 @@ int main(void)
 		} else if (key_val == 0x03){
 			lcd_nokia_set_cursor(&lcd, 0, 0);
 			lcd_nokia_write_string(&lcd, "3", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x04){
+				lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "4", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x05){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "5", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x06){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "6", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x07){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "7", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x08){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "8", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x09){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "9", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x0A){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "*", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x0B){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "0", 1);
+			lcd_nokia_render(&lcd);
+
+			// reset key to invalid value
+			key_val = 0xFF;
+		} else if (key_val == 0x0C){
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			lcd_nokia_write_string(&lcd, "#", 1);
 			lcd_nokia_render(&lcd);
 
 			// reset key to invalid value
@@ -113,6 +176,8 @@ int main(void)
 //end testing keypad
 
 // Begin Game
+	
+
 	
 	// Example
 	_delay_ms(1000);
@@ -183,7 +248,7 @@ void write_player_turn(LcdNokia *lcd_ptr, bool x_turn){
 	lcd_nokia_render(lcd_ptr);
 	return;
 }
-
+bool play(uint8_t)
 void keypad_init(){
 	// Enable Pull-Up Resistors
 	//MCUCR |= (0 << PUD);
@@ -193,7 +258,7 @@ void keypad_init(){
 	DDRD = 0x00;
 		
 	// Enable the internal pull-ups by writing logic 1 to 
-	PORTD |= 0xF0;
+	PORTD |= 0xFF;
 	
 	// Update: Set PC 0-2 as outputs
 	// Drive PC0-2 low
@@ -224,11 +289,15 @@ uint8_t getKeyPressed()
 	for (c = 0; c<3; c++) {	
 		//Drive a single col pin low
 		PORTC = 0x07 & (~(1<<c));
+		//c=0	00000111 & (~0000001) = 00000111 & (1111110) = 00000110
+		//c=1	00000111 & (~0000010) = 00000111 & (1111101) = 00000101
+		//c=2	00000111 & (~0000100) = 00000111 & (1111011) = 00000011
 
 		// Changed all of these from PORTD to PIND
 		if (bit_is_clear(PIND, 4)) {
 			// Row 1 - PD4
 			return (uint8_t)(3*0)+(c+1);
+			// Row 1 is always returning 1
 			
 		} else if (bit_is_clear(PIND, 5)){
 			// Row 2 - PD5
