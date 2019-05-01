@@ -40,11 +40,7 @@ uint8_t getKeyPressed();
 
 // Global Values
 uint8_t key_val = 0xFF;
-int board[3][3] = {
-		{-1,-1,-1},
-		{-1,-1,-1},
-		{-1,-1,-1}
-	};
+int board[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
 bool x_turn = true;
 
 ISR(PCINT2_vect){
@@ -68,146 +64,156 @@ int main(void)
 	
 // End Initialization
 
-// testing keypad - delete later
+// Begin Game Logic
 
 	while(1){
-		uint8_t r=0;
-		uint8_t c=0;
-		
 		if (key_val == 0x01){
-			// Pressed Row 1 - i.e. RESET/ NEW GAME
-			for (int i = 0; i < 3; i++){
-				for (int j = 0; j < 3; j++){
-					board[i][j] = -1;
-				}
+			// Pressed Row 1 - RESET/ NEW GAME
+			for (int i =0; i <9 ;i++){
+				board[i] = -1;
 			}
 			x_turn = true;
-			
+			lcd_nokia_clear(&lcd);
 			lcd_nokia_set_cursor(&lcd, 0, 0);
 			lcd_nokia_write_string(&lcd, "   New Game   ", 1);
 			lcd_nokia_render(&lcd);
-			_delay_ms(500);
+			_delay_ms(1000);
 			board_int(&lcd);
 
 		}  else if (key_val == 0x04){
 			// Pressed "4" i.e. Row 0 Col 0;
-			r = 0;
-			c = 0;
-			write_token(&lcd, x_turn, COL0, ROW0);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if (board[0] == -1){
+				board[0] = x_turn;
+				write_token(&lcd, x_turn, COL0, ROW0);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x05){
 			// Pressed "5" i.e. Row 0 Col 1
-			r = 0;
-			c = 1;
-			write_token(&lcd, x_turn, COL1, ROW0);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[1] == -1){
+				board[1]= x_turn;
+				write_token(&lcd, x_turn, COL1, ROW0);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x06){
 			// Pressed "6" i.e. Row 0 Col 2
-			r = 0;
-			c = 2;
-			write_token(&lcd, x_turn, COL2, ROW0);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[2]==-1){
+				board[2]=x_turn;
+				write_token(&lcd, x_turn, COL2, ROW0);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x07){
 			// Pressed "7" i.e. Row 1 Col 0
-			r = 1;
-			c = 0;
-			write_token(&lcd, x_turn, COL0, ROW1);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[3]==-1){
+				board[3]=x_turn;
+				write_token(&lcd, x_turn, COL0, ROW1);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x08){
 			// Pressed "8" i.e. Row 1 Col 1
-			r = 1;
-			c = 1;
-			write_token(&lcd, x_turn, COL1, ROW1);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[4]==-1){
+				board[4]=x_turn;
+				write_token(&lcd, x_turn, COL1, ROW1);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x09){
 			// Pressed "9" i.e. Row 1 Col 2
-			r = 1;
-			c = 2;
-			write_token(&lcd, x_turn, COL2, ROW1);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[5]==-1){
+				board[5]=x_turn;
+				write_token(&lcd, x_turn, COL2, ROW1);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x0A){
 			// Pressed "*" i.e. Row 2 Col 0
-			r = 2;
-			c = 0;
-			write_token(&lcd, x_turn, COL0, ROW2);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[6]==-1){
+				board[6]=x_turn;
+				write_token(&lcd, x_turn, COL0, ROW2);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x0B){
 			// Pressed "0" i.e. Row 2 Col 2
-			r = 2;
-			c = 1;
-			write_token(&lcd, x_turn, COL1, ROW2);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[7]==-1){
+				board[7]=x_turn;
+				write_token(&lcd, x_turn, COL1, ROW2);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 
 		} else if (key_val == 0x0C){
 			// Pressed "#" i.e. Row 2 Col 2
-			r = 2;
-			c = 2;
-			write_token(&lcd, x_turn, COL2, ROW2);
-			x_turn = !x_turn;
-			write_player_turn(&lcd, x_turn);
-			lcd_nokia_render(&lcd);
+			if(board[8]==-1){
+				board[8]=x_turn;
+				write_token(&lcd, x_turn, COL2, ROW2);
+				x_turn = !x_turn;
+				write_player_turn(&lcd, x_turn);
+				lcd_nokia_render(&lcd);
+			}
 		} 
-
 		
+		// Check for a winner!
+		// Possible Combinations 012 345 678 036 147 258 048 246
+		bool winner = false;
+		if((board[0] != -1) && (board[0] == board[1]) && (board[1] == board[2])){
+			winner = true;
+		} else if((board[6] != -1) && (board[6] == board[7]) && (board[7] == board[8])){
+			winner = true;
+		} else if ((board[3] != -1) && (board[3] == board[4]) && (board[4] == board[5])){
+			winner = true;
+		} else if((board[0] != -1) && (board[0] == board[3]) && (board[3] == board[6])){
+			winner = true;
+		} else if((board[1] != -1) && (board[1] == board[4]) && (board[4] == board[7])){
+			winner = true;
+		} else if((board[2] != -1) && (board[2] == board[5]) && (board[5] == board[8])){
+			winner = true;
+		} else if((board[0] != -1) && (board[0] == board[4]) && (board[4] == board[8])){
+			winner = true;
+		}  else if((board[2] != -1) && (board[2] == board[4]) && (board[4] == board[6])){
+			winner = true;
+		}
+		
+		if(winner){
+			lcd_nokia_clear(&lcd);
+			lcd_nokia_set_cursor(&lcd, 0, 0);
+			if(x_turn){
+				lcd_nokia_write_string(&lcd, " O Wins!", 2);
+			} else {
+				lcd_nokia_write_string(&lcd, " X Wins!", 2);
+			}
+			lcd_nokia_set_cursor(&lcd, 0, ROW1+8);
+			lcd_nokia_write_string(&lcd, "Press New Game to continue", 1);
+			lcd_nokia_render(&lcd);
+			for (int i =0; i <9 ;i++){
+				board[i] = -1;
+			}
+			
+		}
+
 		// reset key to invalid value
 		key_val = 0xFF;
 
 	}
-//end testing keypad -- delete
-
-// Begin Game
-
-	
-	// Example
-	_delay_ms(1000);
-	
-	write_token(&lcd, 1, COL0, ROW2);
-	x_turn = !x_turn;
-	write_player_turn(&lcd, x_turn);
-	_delay_ms(1000);
-	
-	write_token(&lcd, 0, COL1, ROW2);
-	x_turn = !x_turn;
-	write_player_turn(&lcd, x_turn);
-	_delay_ms(1000);
-	
-	write_token(&lcd, 1, COL0, ROW0);
-	x_turn = !x_turn;
-	write_player_turn(&lcd, x_turn);
-	_delay_ms(1000);
-	
-	write_token(&lcd, 0, COL2, ROW2);
-	x_turn = !x_turn;
-	write_player_turn(&lcd, x_turn);
-	// End Example
-
-	for (;;) {
-		_delay_ms(1000);
-	}
-
+// End Game Logics
 }
 
 void board_int(LcdNokia *lcd_ptr){
