@@ -6,4 +6,4 @@ This project was inspired by the games included on the Nokia 5110 and 3310 cell 
 
 ## Implementation
 
-To implement our project, we chose to use a Nokia 5110/3310 LCD unit as the user display, and a 3 x 4 matrix keypad as the interface for user input. Interfacing these components with the ATmega88PA and development board required that we also incorporate a 3.3 V Voltage regulator, and High-to-Low logic level shifter. This hardware will be described in further detail in the sections below. 
+To implement our project, we chose to use a Nokia 5110/3310 LCD unit as the user display, and a 3 x 4 matrix keypad as the interface for user input. Interfacing these components with the ATmega88PA and development board required that we also incorporate a 3.3 V Voltage regulator, and High-to-Low logic level shifter.
