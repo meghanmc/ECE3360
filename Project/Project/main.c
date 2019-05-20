@@ -12,7 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <avr/interrupt.h>
-#include "nlcd.h"		// library for displaying to Nokia 5110 LCD
+#include "nlcd.h"		// library for displaying to Nokia 5110 LCD - from https://github.com/ss2222/AVR-nokia-5110
 
 #define COL0 3*6
 #define COL1 7*6
